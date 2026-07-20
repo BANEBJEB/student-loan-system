@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student Management System (CRUD)</title>
+<style>
+ body{
+    font-family: 'Segoe UI', Arial, sans-serif;
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+    background: #f4f7fb;
+    color: #333;
+}
+
+h1{
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+h2, h3{
+    color: #34495e;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+    background:#fff;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+
+th{
+    background:#3498db;
+    color:white;
+    padding:12px;
+}
+
+td{
+    padding:10px;
+}
+
+tr:nth-child(even){
+    background:#f8f9fa;
+}
+
+tr:hover{
+    background:#eef6ff;
+}
+
+button{
+    background:#3498db;
+    color:white;
+    border:none;
+    padding:8px 14px;
+    border-radius:5px;
+    cursor:pointer;
+    transition:.3s;
+}
+
+button:hover{
+    background:#2980b9;
+}
+
+.inline-form{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,.08);
+    margin-top:15px;
+}
+
+input, select{
+    border:1px solid #ccc;
+    border-radius:5px;
+    padding:8px;
+}
+
+input:focus, select:focus{
+    border-color:#3498db;
+    outline:none;
+}
+
+.summary-card{
+    flex:1;
+    background:white;
+    border:none;
+    border-left:5px solid #3498db;
+    border-radius:8px;
+    box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+
+#loanWorkspace,
+#paymentWorkspace{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,.08);
+    margin-top:30px;
+}
+</style>
+</head>
+<body>
+
+<h1>Student Management System (CRUD)</h1>
+
+<button id="btnShowAddStudent">Add Student</button>
+
+<form id="studentForm" class="inline-form">
+  <input type="hidden" id="studentId">
+  <label>Name<input type="text" id="studentName" required></label>
+  <label>Email<input type="email" id="studentEmail" required></label>
+  <label>Course<input type="text" id="studentCourse" required></label>
+  <div class="form-actions">
+    <button type="submit" id="btnSaveStudent">Save</button>
+    <button type="button" id="btnCancelStudent">Cancel</button>
+  </div>
+  <div class="error-msg" id="studentFormError"></div>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th><th>Name</th><th>Email</th><th>Course</th><th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="studentTableBody"></tbody>
+</table>
+
+<!-- LOAN WORKSPACE: shown when "Loans" is clicked for a student -->
+<div id="loanWorkspace">
+  <h2>Loans for: <span id="loanStudentName"></span></h2>
+  <button id="btnCloseLoanWorkspace">Close</button>
+
+  <h3>Add Loan</h3>
+  <form id="loanForm" class="inline-form active">
+    <input type="hidden" id="loanId">
+    <label>Amount
+      <input type="number" id="loanAmount" step="0.01" min="0" required>
+    </label>
+    <label>Loan Type
+      <select id="loanType" required>
+        <option value="Tuition">Tuition</option>
+        <option value="Books">Books</option>
+        <option value="Living Expenses">Living Expenses</option>
+      </select>
+    </label>
+    <label>Status
+      <select id="loanStatus" required>
+        <option value="Pending">Pending</option>
+        <option value="Approved">Approved</option>
+        <option value="Disbursed">Disbursed</option>
+      </select>
+    </label>
+    <div class="form-actions">
+      <button type="submit">Save Loan</button>
+    </div>
+    <div class="error-msg" id="loanFormError"></div>
+  </form>
+
+  <h3>Existing Loans</h3>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Amount</th><th>Type</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="loanTableBody"></tbody>
+  </table>
+</div>
+
+<!-- PAYMENT WORKSPACE: shown when "Payments"/"View" is clicked for a loan -->
+<div id="paymentWorkspace">
+  <h2>Payments for Loan #<span id="paymentLoanId"></span></h2>
+  <button id="btnClosePaymentWorkspace">Close</button>
+
+  <div class="summary-box">
+    <div class="summary-card">
+      <div class="label">Loan Amount</div>
+      <div class="value" id="summaryLoanAmount">0.00</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Total Paid</div>
+      <div class="value" id="summaryTotalPaid">0.00</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Remaining Balance</div>
+      <div class="value" id="summaryRemaining">0.00</div>
+    </div>
+  </div>
+
+  <h3>Add Payment</h3>
+  <form id="paymentForm" class="inline-form active">
+    <input type="hidden" id="paymentId">
+    <label>Payment Amount
+      <input type="number" id="paymentAmount" step="0.01" min="0" required>
+    </label>
+    <label>Payment Date
+      <input type="date" id="paymentDate" required>
+    </label>
+    <label>Payment Method
+      <select id="paymentMethod" required>
+        <option value="Cash">Cash</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+        <option value="Online Payment">Online Payment</option>
+      </select>
+    </label>
+    <div class="form-actions">
+      <button type="submit">Save Payment</button>
+    </div>
+    <div class="error-msg" id="paymentFormError"></div>
+  </form>
+
+  <h3>Existing Payments</h3>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Amount</th><th>Date</th><th>Method</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="paymentTableBody"></tbody>
+  </table>
+</div>
+
+<script>
+const API_STUDENTS = "api.php";
+const API_LOANS = "loans.php";
+
+let currentLoanStudentId = null;
+let currentLoanStudentName = "";
+
+// ---------- helpers ----------
+function cell(text) {
+  const td = document.createElement("td");
+  td.textContent = text; // textContent, not innerHTML -> avoids stored XSS
+  return td;
+}
+
+// ---------- STUDENT CRUD ----------
+async function loadStudents() {
+  const res = await fetch(API_STUDENTS);
+  const students = await res.json();
+  const tbody = document.getElementById("studentTableBody");
+  tbody.innerHTML = "";
+
+  students.forEach(s => {
+    const tr = document.createElement("tr");
+    tr.appendChild(cell(s.id));
+    tr.appendChild(cell(s.name));
+    tr.appendChild(cell(s.email));
+    tr.appendChild(cell(s.course));
+
+    const actionsTd = document.createElement("td");
+
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Edit";
+    editBtn.onclick = () => editStudent(s);
+    actionsTd.appendChild(editBtn);
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
+    delBtn.onclick = () => deleteStudent(s.id);
+    actionsTd.appendChild(delBtn);
+
+    const loansBtn = document.createElement("button");
+    loansBtn.textContent = "Loans";
+    loansBtn.onclick = () => openLoanWorkspace(s.id, s.name);
+    actionsTd.appendChild(loansBtn);
+
+    const viewLoansBtn = document.createElement("button");
+    viewLoansBtn.textContent = "View";
+    viewLoansBtn.onclick = () => openLoanWorkspace(s.id, s.name);
+    actionsTd.appendChild(viewLoansBtn);
+
+    tr.appendChild(actionsTd);
+    tbody.appendChild(tr);
+  });
+}
+
+function editStudent(s) {
+  document.getElementById("studentId").value = s.id;
+  document.getElementById("studentName").value = s.name;
+  document.getElementById("studentEmail").value = s.email;
+  document.getElementById("studentCourse").value = s.course;
+  document.getElementById("studentForm").classList.add("active");
+}
+
+async function deleteStudent(id) {
+  if (!confirm("Delete this student and all their loans?")) return;
+  await fetch(API_STUDENTS, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  });
+  loadStudents();
+}
+
+document.getElementById("btnShowAddStudent").onclick = () => {
+  document.getElementById("studentForm").reset();
+  document.getElementById("studentId").value = "";
+  document.getElementById("studentForm").classList.add("active");
+};
+
+document.getElementById("btnCancelStudent").onclick = () => {
+  document.getElementById("studentForm").classList.remove("active");
+};
+
+document.getElementById("studentForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("studentId").value;
+  const payload = {
+    name: document.getElementById("studentName").value,
+    email: document.getElementById("studentEmail").value,
+    course: document.getElementById("studentCourse").value
+  };
+  const errBox = document.getElementById("studentFormError");
+  errBox.textContent = "";
+
+  try {
+    let res;
+    if (id) {
+      payload.id = id;
+      res = await fetch(API_STUDENTS, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      res = await fetch(API_STUDENTS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || "Save failed");
+
+    document.getElementById("studentForm").classList.remove("active");
+    document.getElementById("studentForm").reset();
+    loadStudents();
+  } catch (err) {
+    errBox.textContent = err.message;
+  }
+});
+
+// ---------- LOAN WORKSPACE ----------
+function openLoanWorkspace(studentId, studentName) {
+  currentLoanStudentId = studentId;
+  currentLoanStudentName = studentName;
+  document.getElementById("loanStudentName").textContent = studentName;
+  document.getElementById("loanWorkspace").style.display = "block";
+  document.getElementById("loanForm").reset();
+  document.getElementById("loanId").value = "";
+  loadLoans();
+  document.getElementById("loanWorkspace").scrollIntoView({ behavior: "smooth" });
+}
+
+document.getElementById("btnCloseLoanWorkspace").onclick = () => {
+  document.getElementById("loanWorkspace").style.display = "none";
+  currentLoanStudentId = null;
+};
+
+async function loadLoans() {
+  if (!currentLoanStudentId) return;
+  const res = await fetch(`${API_LOANS}?student_id=${currentLoanStudentId}`);
+  const loans = await res.json();
+  const tbody = document.getElementById("loanTableBody");
+  tbody.innerHTML = "";
+
+  loans.forEach(l => {
+    const tr = document.createElement("tr");
+    tr.appendChild(cell(l.id));
+    tr.appendChild(cell(l.amount));
+    tr.appendChild(cell(l.loan_type));
+    tr.appendChild(cell(l.status));
+
+    const actionsTd = document.createElement("td");
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Edit";
+    editBtn.onclick = () => editLoan(l);
+    actionsTd.appendChild(editBtn);
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
+    delBtn.onclick = () => deleteLoan(l.id);
+    actionsTd.appendChild(delBtn);
+
+    const paymentsBtn = document.createElement("button");
+    paymentsBtn.textContent = "Payments";
+    paymentsBtn.onclick = () => openPaymentWorkspace(l.id, l.amount);
+    actionsTd.appendChild(paymentsBtn);
+
+    const viewPaymentsBtn = document.createElement("button");
+    viewPaymentsBtn.textContent = "View";
+    viewPaymentsBtn.onclick = () => openPaymentWorkspace(l.id, l.amount);
+    actionsTd.appendChild(viewPaymentsBtn);
+
+    tr.appendChild(actionsTd);
+    tbody.appendChild(tr);
+  });
+}
+
+function editLoan(l) {
+  document.getElementById("loanId").value = l.id;
+  document.getElementById("loanAmount").value = l.amount;
+  document.getElementById("loanType").value = l.loan_type;
+  document.getElementById("loanStatus").value = l.status;
+}
+
+async function deleteLoan(id) {
+  if (!confirm("Delete this loan record?")) return;
+  await fetch(API_LOANS, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  });
+  loadLoans();
+}
+
+document.getElementById("loanForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errBox = document.getElementById("loanFormError");
+  errBox.textContent = "";
+
+  const id = document.getElementById("loanId").value;
+  const payload = {
+    amount: document.getElementById("loanAmount").value,
+    loan_type: document.getElementById("loanType").value,
+    status: document.getElementById("loanStatus").value
+  };
+
+  try {
+    let res;
+    if (id) {
+      payload.id = id;
+      res = await fetch(API_LOANS, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      payload.student_id = currentLoanStudentId;
+      res = await fetch(API_LOANS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || "Save failed");
+
+    document.getElementById("loanForm").reset();
+    document.getElementById("loanId").value = "";
+    loadLoans();
+  } catch (err) {
+    errBox.textContent = err.message;
+  }
+});
+
+// ---------- PAYMENT WORKSPACE ----------
+const API_PAYMENTS = "payments.php";
+let currentPaymentLoanId = null;
+let currentPaymentLoanAmount = 0;
+
+function openPaymentWorkspace(loanId, loanAmount) {
+  currentPaymentLoanId = loanId;
+  currentPaymentLoanAmount = parseFloat(loanAmount);
+  document.getElementById("paymentLoanId").textContent = loanId;
+  document.getElementById("summaryLoanAmount").textContent = currentPaymentLoanAmount.toFixed(2);
+  document.getElementById("paymentWorkspace").style.display = "block";
+  document.getElementById("paymentForm").reset();
+  document.getElementById("paymentId").value = "";
+  loadPayments();
+  document.getElementById("paymentWorkspace").scrollIntoView({ behavior: "smooth" });
+}
+
+document.getElementById("btnClosePaymentWorkspace").onclick = () => {
+  document.getElementById("paymentWorkspace").style.display = "none";
+  currentPaymentLoanId = null;
+};
+
+async function loadPayments() {
+  if (!currentPaymentLoanId) return;
+  const res = await fetch(`${API_PAYMENTS}?loan_id=${currentPaymentLoanId}`);
+  const payments = await res.json();
+  const tbody = document.getElementById("paymentTableBody");
+  tbody.innerHTML = "";
+
+  let totalPaid = 0;
+
+  payments.forEach(p => {
+    totalPaid += parseFloat(p.amount);
+
+    const tr = document.createElement("tr");
+    tr.appendChild(cell(p.id));
+    tr.appendChild(cell(p.amount));
+    tr.appendChild(cell(p.payment_date));
+    tr.appendChild(cell(p.payment_method));
+
+    const actionsTd = document.createElement("td");
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Edit";
+    editBtn.onclick = () => editPayment(p);
+    actionsTd.appendChild(editBtn);
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
+    delBtn.onclick = () => deletePayment(p.id);
+    actionsTd.appendChild(delBtn);
+
+    tr.appendChild(actionsTd);
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("summaryTotalPaid").textContent = totalPaid.toFixed(2);
+  document.getElementById("summaryRemaining").textContent = (currentPaymentLoanAmount - totalPaid).toFixed(2);
+}
+
+function editPayment(p) {
+  document.getElementById("paymentId").value = p.id;
+  document.getElementById("paymentAmount").value = p.amount;
+  document.getElementById("paymentDate").value = p.payment_date;
+  document.getElementById("paymentMethod").value = p.payment_method;
+}
+
+async function deletePayment(id) {
+  if (!confirm("Delete this payment record?")) return;
+  await fetch(API_PAYMENTS, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  });
+  loadPayments();
+}
+
+document.getElementById("paymentForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errBox = document.getElementById("paymentFormError");
+  errBox.textContent = "";
+
+  const id = document.getElementById("paymentId").value;
+  const payload = {
+    amount: document.getElementById("paymentAmount").value,
+    payment_date: document.getElementById("paymentDate").value,
+    payment_method: document.getElementById("paymentMethod").value
+  };
+
+  try {
+    let res;
+    if (id) {
+      payload.id = id;
+      res = await fetch(API_PAYMENTS, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      payload.loan_id = currentPaymentLoanId;
+      res = await fetch(API_PAYMENTS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || "Save failed");
+
+    document.getElementById("paymentForm").reset();
+    document.getElementById("paymentId").value = "";
+    loadPayments();
+  } catch (err) {
+    errBox.textContent = err.message;
+  }
+});
+
+// ---------- init ----------
+loadStudents();
+</script>
+</body>
+</html>
